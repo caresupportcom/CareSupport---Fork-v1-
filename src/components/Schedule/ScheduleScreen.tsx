@@ -3,12 +3,17 @@ import { CalendarIcon, LayoutDashboardIcon, ClockIcon } from 'lucide-react';
 import { storage } from '../../services/StorageService';
 import { analytics, AnalyticsEvents } from '../../services/AnalyticsService';
 import { useUserProfile } from '../../contexts/UserProfileContext';
+import { SimplifiedScheduleProvider } from '../../contexts/SimplifiedScheduleContext';
+import { SimplifiedSchedulePage } from './Simplified/SimplifiedSchedulePage';
 import { ScheduleDashboard } from './ScheduleDashboard';
 import { ShiftsView } from './ShiftsView/ShiftsView';
 import { AvailabilityView } from './Availability/AvailabilityView';
 export const ScheduleScreen = ({
   navigateTo
 }) => {
+  // Feature flag for simplified schedule (Phase 1 implementation)
+  const [useSimplifiedSchedule, setUseSimplifiedSchedule] = useState(true);
+  
   // State for active tab
   const [activeTab, setActiveTab] = useState('dashboard');
   const {
@@ -32,6 +37,15 @@ export const ScheduleScreen = ({
   const handleTabChange = tab => {
     setActiveTab(tab);
   };
+  // If using simplified schedule, render the new implementation
+  if (useSimplifiedSchedule) {
+    return (
+      <SimplifiedScheduleProvider>
+        <SimplifiedSchedulePage navigateTo={navigateTo} />
+      </SimplifiedScheduleProvider>
+    );
+  }
+
   return <div className="h-full flex flex-col bg-white">
       {/* Header */}
       <div className="px-6 pt-6 pb-4">

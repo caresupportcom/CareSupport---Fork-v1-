@@ -1,7 +1,12 @@
 import { storage } from './StorageService';
 import { notificationService } from './NotificationService';
 import { analytics, AnalyticsEvents } from './AnalyticsService';
-import { UserAvailability, AvailabilityStatus, WeeklyAvailabilityPattern, SimpleTimeSlot } from '../types/ScheduleTypes';
+import { 
+  UserAvailability, 
+  AvailabilityStatus, 
+  WeeklyAvailabilityPattern, 
+  SimpleTimeSlot 
+} from '../types/ScheduleTypes';
 
 /**
  * Simplified Availability Service for MVP

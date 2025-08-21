@@ -16,6 +16,57 @@ export interface CareShift {
   updatedAt?: string;
   color?: string; // For visual distinction in the UI
 }
+
+// Simplified Availability Status for MVP
+export type AvailabilityStatus = 'available' | 'tentative' | 'unavailable';
+
+// Simplified User Availability Model
+export interface UserAvailability {
+  userId: string;
+  status: AvailabilityStatus;
+  dateOverrides: Record<string, AvailabilityStatus>;
+  recurringPattern: WeeklyAvailabilityPattern;
+  lastUpdated: string;
+}
+
+// Weekly availability pattern (simplified)
+export interface WeeklyAvailabilityPattern {
+  [dayOfWeek: number]: SimpleTimeSlot[];
+}
+
+// Simplified time slot
+export interface SimpleTimeSlot {
+  id: string;
+  startTime: string; // HH:MM format
+  endTime: string;   // HH:MM format
+  status: 'available' | 'tentative';
+}
+
+// Coverage metrics for dashboard
+export interface CoverageMetrics {
+  totalHours: number;
+  coveredHours: number;
+  coveragePercentage: number;
+  criticalGaps: number;
+  moderateGaps: number;
+  confirmedShifts: number;
+  tentativeShifts: number;
+  openShifts: number;
+}
+
+// Simplified coverage gap with action focus
+export interface SimplifiedCoverageGap {
+  id: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+  priority: 'critical' | 'moderate' | 'minor';
+  suggestedCaregivers: string[];
+  requestsSent: string[];
+  status: 'open' | 'pending_responses' | 'resolved';
+  identifiedAt: string;
+  resolvedAt?: string;
+}
 // Model for coverage gaps in the schedule
 export interface CoverageGap {
   id: string;
