@@ -3,7 +3,7 @@
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
 /* DO NOT DELETE THESE TAILWIND IMPORTS, OTHERWISE THE STYLING WILL NOT RENDER AT ALL */
-/* CareSupport OKLCH Color System */
+/* CareSupport OKLCH Color System - Enhanced */
 :root {
   /* Critical Status */
   --cs-gap-critical: oklch(0.6 0.25 20);      /* Red – coverage gaps/alerts */
