@@ -3,28 +3,121 @@
 @import 'tailwindcss/components';
 @import 'tailwindcss/utilities';
 /* DO NOT DELETE THESE TAILWIND IMPORTS, OTHERWISE THE STYLING WILL NOT RENDER AT ALL */
+/* CareSupport OKLCH Color System */
+:root {
+  /* Critical Status */
+  --cs-gap-critical: oklch(0.6 0.25 20);      /* Red – coverage gaps/alerts */
+  --cs-covered-confirmed: oklch(0.7 0.15 140); /* Green – confirmed/covered */
+  --cs-maybe-available: oklch(0.75 0.12 60);  /* Amber – maybe responses */
+  
+  /* Text Contrast */
+  --cs-text-primary: oklch(0.2 0 0);          /* Highest contrast text */
+  --cs-text-secondary: oklch(0.5 0 0);
+  --cs-text-on-dark: oklch(0.95 0 0);
+
+  /* Backgrounds */
+  --cs-bg-page: oklch(0.98 0 0);
+  --cs-bg-card: oklch(0.95 0 0);
+  --cs-bg-urgent: oklch(0.92 0.02 20);     /* Less intense alert bg */
+  
+  /* Extended Status Colors */
+  --cs-available: oklch(0.7 0.15 140);        /* Available status */
+  --cs-tentative: oklch(0.75 0.12 60);        /* Tentative status */
+  --cs-unavailable: oklch(0.6 0.25 20);       /* Unavailable status */
+  --cs-scheduled: oklch(0.65 0.2 240);        /* Scheduled shifts */
+  --cs-in-progress: oklch(0.6 0.2 200);       /* Active shifts */
+  --cs-completed: oklch(0.7 0.15 140);        /* Completed items */
+  
+  /* Priority Levels */
+  --cs-priority-high: oklch(0.6 0.25 20);     /* High priority */
+  --cs-priority-medium: oklch(0.75 0.12 60);  /* Medium priority */
+  --cs-priority-low: oklch(0.7 0.15 140);     /* Low priority */
+  
+  /* Interactive States */
+  --cs-interactive-primary: oklch(0.6 0.2 240);
+  --cs-interactive-hover: oklch(0.55 0.22 240);
+  --cs-interactive-active: oklch(0.5 0.24 240);
+  
+  /* Neutral Grays */
+  --cs-gray-50: oklch(0.98 0 0);
+  --cs-gray-100: oklch(0.95 0 0);
+  --cs-gray-200: oklch(0.9 0 0);
+  --cs-gray-300: oklch(0.8 0 0);
+  --cs-gray-400: oklch(0.7 0 0);
+  --cs-gray-500: oklch(0.6 0 0);
+  --cs-gray-600: oklch(0.5 0 0);
+  --cs-gray-700: oklch(0.4 0 0);
+  --cs-gray-800: oklch(0.3 0 0);
+  --cs-gray-900: oklch(0.2 0 0);
+}
+
+@supports not (color: oklch(0 0 0)) {
+  :root {
+    /* Fallbacks (sRGB hex) */
+    --cs-gap-critical: #d63031;
+    --cs-covered-confirmed: #00b894;
+    --cs-maybe-available: #fecb2f;
+    --cs-text-primary: #18181a;
+    --cs-text-secondary: #515157;
+    --cs-text-on-dark: #f9faff;
+    --cs-bg-page: #f8fafd;
+    --cs-bg-card: #f4f4f6;
+    --cs-bg-urgent: #fff0f0;
+    
+    /* Extended Status Colors */
+    --cs-available: #00b894;
+    --cs-tentative: #fecb2f;
+    --cs-unavailable: #d63031;
+    --cs-scheduled: #0984e3;
+    --cs-in-progress: #6c5ce7;
+    --cs-completed: #00b894;
+    
+    /* Priority Levels */
+    --cs-priority-high: #d63031;
+    --cs-priority-medium: #fecb2f;
+    --cs-priority-low: #00b894;
+    
+    /* Interactive States */
+    --cs-interactive-primary: #0984e3;
+    --cs-interactive-hover: #0770c2;
+    --cs-interactive-active: #065fa1;
+    
+    /* Neutral Grays */
+    --cs-gray-50: #f8fafc;
+    --cs-gray-100: #f1f5f9;
+    --cs-gray-200: #e2e8f0;
+    --cs-gray-300: #cbd5e1;
+    --cs-gray-400: #94a3b8;
+    --cs-gray-500: #64748b;
+    --cs-gray-600: #475569;
+    --cs-gray-700: #334155;
+    --cs-gray-800: #1e293b;
+    --cs-gray-900: #0f172a;
+  }
+}
+
 /* Accessibility styles */
 .high-contrast {
   --bg-opacity: 1 !important;
   --text-opacity: 1 !important;
   /* Increase contrast for text */
   .text-gray-500, .text-gray-600 {
-    @apply text-gray-800;
+    color: var(--cs-text-primary);
   }
   /* Increase contrast for borders */
   .border-gray-200 {
-    @apply border-gray-400;
+    border-color: var(--cs-gray-400);
   }
   /* Increase contrast for backgrounds */
   .bg-gray-50, .bg-gray-100 {
-    @apply bg-white;
+    background-color: var(--cs-bg-card);
   }
   /* Increase contrast for active elements */
   .bg-blue-100 {
-    @apply bg-blue-200;
+    background-color: var(--cs-interactive-primary);
   }
   .text-blue-500, .text-blue-600 {
-    @apply text-blue-700;
+    color: var(--cs-interactive-primary);
   }
 }
 .large-text {
