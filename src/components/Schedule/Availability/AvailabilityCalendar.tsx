@@ -1,40 +1,46 @@
 import React, { useEffect, useState } from 'react';
-import { ChevronLeftIcon, ChevronRightIcon, PlusIcon, XIcon, CheckIcon } from 'lucide-react';
+import { ChevronLeftIcon, ChevronRightIcon, CheckCircleIcon, ClockIcon, XCircleIcon, InfoIcon } from 'lucide-react';
 import { availabilityService } from '../../../services/AvailabilityService';
 import { storage } from '../../../services/StorageService';
 import { analytics, AnalyticsEvents } from '../../../services/AnalyticsService';
+
 export const AvailabilityCalendar = () => {
   const [currentMonth, setCurrentMonth] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState(null);
-  const [showDateEditor, setShowDateEditor] = useState(false);
   const [availabilityData, setAvailabilityData] = useState({});
   const [userId, setUserId] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
+
   // Load availability data
   useEffect(() => {
     const userId = storage.get('user_id', '');
     setUserId(userId);
     if (userId) {
-      // Load availability data for the current month
       loadMonthData(currentMonth);
     }
   }, []);
+
   // Load data when month changes
   useEffect(() => {
     if (userId) {
       loadMonthData(currentMonth);
     }
   }, [currentMonth, userId]);
+
   // Load month data
-  const loadMonthData = date => {
+  const loadMonthData = (date) => {
+    setIsLoading(true);
     const year = date.getFullYear();
     const month = date.getMonth();
     const startDate = new Date(year, month, 1);
     const endDate = new Date(year, month + 1, 0);
     const startDateStr = startDate.toISOString().split('T')[0];
     const endDateStr = endDate.toISOString().split('T')[0];
+
     const data = availabilityService.getAvailabilityRange(userId, startDateStr, endDateStr);
     setAvailabilityData(data);
+    setIsLoading(false);
   };
+
   // Calendar navigation
   const nextMonth = () => {
     const next = new Date(currentMonth);
@@ -45,6 +51,7 @@ export const AvailabilityCalendar = () => {
       direction: 'next'
     });
   };
+
   const prevMonth = () => {
     const prev = new Date(currentMonth);
     prev.setMonth(prev.getMonth() - 1);
@@ -54,163 +61,332 @@ export const AvailabilityCalendar = () => {
       direction: 'previous'
     });
   };
-  // Date selection
-  const handleDateClick = date => {
-    setSelectedDate(date);
-    setShowDateEditor(true);
+
+  // Quick status toggle - simplified for MVP
+  const toggleDateStatus = (date) => {
+    const dateStr = date.toISOString().split('T')[0];
+    const currentStatus = availabilityData[dateStr] || 'unset';
+    
+    // Simple cycle: unset -> available -> unavailable -> unset
+    let newStatus;
+    switch (currentStatus) {
+      case 'unset':
+        newStatus = 'available';
+        break;
+      case 'available':
+        newStatus = 'unavailable';
+        break;
+      case 'unavailable':
+        newStatus = 'unset';
+        break;
+      default:
+        newStatus = 'available';
+    }
+
+    // Update local state immediately for responsive UI
+    setAvailabilityData({
+      ...availabilityData,
+      [dateStr]: newStatus
+    });
+
+    // Save to service
+    if (newStatus === 'unset') {
+      // Remove the entry if setting back to unset
+      availabilityService.setDateAvailability(userId, dateStr, 'available');
+      const updatedData = { ...availabilityData };
+      delete updatedData[dateStr];
+      setAvailabilityData(updatedData);
+    } else {
+      availabilityService.setDateAvailability(userId, dateStr, newStatus);
+    }
+
+    // Track event
     analytics.trackEvent(AnalyticsEvents.FEATURE_USED, {
-      feature_name: 'availability_date_selected',
-      date: date.toISOString().split('T')[0]
+      feature_name: 'availability_quick_toggle',
+      date: dateStr,
+      new_status: newStatus
     });
   };
+
   // Generate calendar days
   const generateCalendarDays = () => {
     const year = currentMonth.getFullYear();
     const month = currentMonth.getMonth();
-    // First day of the month
     const firstDay = new Date(year, month, 1);
-    // Last day of the month
     const lastDay = new Date(year, month + 1, 0);
-    // Day of the week for the first day (0 = Sunday, 6 = Saturday)
     const firstDayOfWeek = firstDay.getDay();
-    // Total days in the month
     const daysInMonth = lastDay.getDate();
-    // Array to hold all calendar days including empty slots for proper alignment
+
     const calendarDays = [];
+
     // Add empty slots for days before the 1st of the month
     for (let i = 0; i < firstDayOfWeek; i++) {
       calendarDays.push(null);
     }
+
     // Add actual days of the month
     for (let day = 1; day <= daysInMonth; day++) {
       const date = new Date(year, month, day);
       calendarDays.push(date);
     }
+
     return calendarDays;
   };
+
   // Get status for a specific date
-  const getDateStatus = date => {
+  const getDateStatus = (date) => {
     if (!date) return null;
     const dateStr = date.toISOString().split('T')[0];
     return availabilityData[dateStr] || 'unset';
   };
-  // Get status color class
-  const getStatusColorClass = status => {
+
+  // Get status styling - using OKLCH color system
+  const getStatusStyling = (status) => {
     switch (status) {
       case 'available':
-        return 'bg-green-100 border-green-300 text-green-800';
+        return {
+          bg: 'bg-cs-covered-confirmed',
+          text: 'text-cs-text-on-dark',
+          icon: <CheckCircleIcon className="w-4 h-4" />,
+          label: 'Available'
+        };
       case 'tentative':
-        return 'bg-yellow-100 border-yellow-300 text-yellow-800';
+        return {
+          bg: 'bg-cs-maybe-available',
+          text: 'text-cs-text-primary',
+          icon: <ClockIcon className="w-4 h-4" />,
+          label: 'Maybe'
+        };
       case 'unavailable':
-        return 'bg-red-100 border-red-300 text-red-800';
+        return {
+          bg: 'bg-cs-gap-critical',
+          text: 'text-cs-text-on-dark',
+          icon: <XCircleIcon className="w-4 h-4" />,
+          label: 'Unavailable'
+        };
       default:
-        return 'bg-gray-100 border-gray-300 text-gray-800';
+        return {
+          bg: 'bg-cs-gray-100',
+          text: 'text-cs-text-secondary',
+          icon: null,
+          label: 'Not set'
+        };
     }
   };
+
   // Check if a date is today
-  const isToday = date => {
+  const isToday = (date) => {
     if (!date) return false;
     const today = new Date();
-    return date.getDate() === today.getDate() && date.getMonth() === today.getMonth() && date.getFullYear() === today.getFullYear();
+    return date.getDate() === today.getDate() && 
+           date.getMonth() === today.getMonth() && 
+           date.getFullYear() === today.getFullYear();
   };
+
+  // Check if a date is in the past
+  const isPastDate = (date) => {
+    if (!date) return false;
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return date < today;
+  };
+
   const calendarDays = generateCalendarDays();
-  return <div>
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-semibold">
-          {currentMonth.toLocaleDateString('default', {
-          month: 'long',
-          year: 'numeric'
-        })}
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="w-8 h-8 border-4 border-cs-interactive-primary border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      {/* Header with navigation */}
+      <div className="flex justify-between items-center mb-6">
+        <h2 className="text-xl font-semibold text-cs-text-primary">
+          {currentMonth.toLocaleDateString('default', { month: 'long', year: 'numeric' })}
         </h2>
         <div className="flex space-x-2">
-          <button onClick={prevMonth} className="p-2 rounded-full hover:bg-gray-100">
+          <button
+            onClick={prevMonth}
+            className="p-2 rounded-lg bg-cs-gray-100 hover:bg-cs-gray-200 text-cs-text-primary focus:outline-none focus:ring-2 focus:ring-cs-interactive-primary"
+            aria-label="Previous month"
+          >
             <ChevronLeftIcon className="w-5 h-5" />
           </button>
-          <button onClick={nextMonth} className="p-2 rounded-full hover:bg-gray-100">
+          <button
+            onClick={nextMonth}
+            className="p-2 rounded-lg bg-cs-gray-100 hover:bg-cs-gray-200 text-cs-text-primary focus:outline-none focus:ring-2 focus:ring-cs-interactive-primary"
+            aria-label="Next month"
+          >
             <ChevronRightIcon className="w-5 h-5" />
           </button>
         </div>
       </div>
+
+      {/* Legend */}
+      <div className="mb-4 p-3 bg-cs-bg-card rounded-lg border border-cs-gray-200">
+        <div className="flex items-center mb-2">
+          <InfoIcon className="w-4 h-4 text-cs-interactive-primary mr-2" />
+          <span className="text-sm font-medium text-cs-text-primary">Quick Setup</span>
+        </div>
+        <p className="text-xs text-cs-text-secondary mb-3">
+          Tap any date to cycle through: Available → Unavailable → Not Set
+        </p>
+        <div className="flex flex-wrap gap-3 text-xs">
+          <div className="flex items-center">
+            <div className="w-4 h-4 bg-cs-covered-confirmed rounded mr-2"></div>
+            <span className="text-cs-text-primary">Available</span>
+          </div>
+          <div className="flex items-center">
+            <div className="w-4 h-4 bg-cs-gap-critical rounded mr-2"></div>
+            <span className="text-cs-text-primary">Unavailable</span>
+          </div>
+          <div className="flex items-center">
+            <div className="w-4 h-4 bg-cs-gray-200 rounded mr-2"></div>
+            <span className="text-cs-text-primary">Not Set</span>
+          </div>
+        </div>
+      </div>
+
       {/* Calendar grid */}
       <div className="grid grid-cols-7 gap-1 text-center">
-        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => <div key={day} className="text-sm font-medium text-gray-500 py-2">
+        {/* Day headers */}
+        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+          <div key={day} className="text-sm font-medium text-cs-text-secondary py-3">
             {day}
-          </div>)}
+          </div>
+        ))}
+
+        {/* Calendar days */}
         {calendarDays.map((date, index) => {
-        if (!date) {
-          return <div key={`empty-${index}`} className="border border-gray-100 bg-gray-50 rounded-md h-16"></div>;
-        }
-        const dateStatus = getDateStatus(date);
-        const statusClass = getStatusColorClass(dateStatus);
-        const todayClass = isToday(date) ? 'border-2 border-blue-500' : '';
-        return <div key={date.toISOString()} onClick={() => handleDateClick(date)} className={`rounded-md h-16 flex flex-col p-1 cursor-pointer transition-colors ${todayClass} ${dateStatus !== 'unset' ? statusClass : 'hover:bg-gray-100'}`}>
-              <div className="text-right text-sm font-medium">
+          if (!date) {
+            return (
+              <div
+                key={`empty-${index}`}
+                className="aspect-square border border-cs-gray-200 bg-cs-gray-50 rounded-lg"
+              ></div>
+            );
+          }
+
+          const dateStatus = getDateStatus(date);
+          const styling = getStatusStyling(dateStatus);
+          const isDateToday = isToday(date);
+          const isDatePast = isPastDate(date);
+
+          return (
+            <button
+              key={date.toISOString()}
+              onClick={() => !isDatePast && toggleDateStatus(date)}
+              disabled={isDatePast}
+              className={`
+                aspect-square rounded-lg border-2 transition-all duration-200 
+                focus:outline-none focus:ring-2 focus:ring-cs-interactive-primary focus:ring-offset-2
+                ${isDateToday ? 'border-cs-interactive-primary' : 'border-transparent'}
+                ${styling.bg} ${styling.text}
+                ${isDatePast ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105 cursor-pointer'}
+                flex flex-col items-center justify-center p-1
+              `}
+              aria-label={`${date.getDate()} ${currentMonth.toLocaleDateString('default', { month: 'long' })}, ${styling.label}`}
+              aria-pressed={dateStatus !== 'unset'}
+            >
+              <div className="text-sm font-medium mb-1">
                 {date.getDate()}
               </div>
-              {dateStatus !== 'unset' && <div className="flex-1 flex items-center justify-center">
-                  <span className="text-xs capitalize">{dateStatus}</span>
-                </div>}
-            </div>;
-      })}
+              {styling.icon && (
+                <div className="flex items-center justify-center">
+                  {styling.icon}
+                </div>
+              )}
+              {isDateToday && (
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-cs-interactive-primary rounded-full"></div>
+              )}
+            </button>
+          );
+        })}
       </div>
-      {showDateEditor && selectedDate && <DateAvailabilityEditor date={selectedDate} initialStatus={getDateStatus(selectedDate)} onClose={() => setShowDateEditor(false)} onSave={status => {
-      // Update local state
-      const dateStr = selectedDate.toISOString().split('T')[0];
-      setAvailabilityData({
-        ...availabilityData,
-        [dateStr]: status
-      });
-      // Save to service
-      availabilityService.setDateAvailability(userId, dateStr, status);
-      // Close editor
-      setShowDateEditor(false);
-      // Track event
-      analytics.trackEvent(AnalyticsEvents.FEATURE_USED, {
-        feature_name: 'availability_date_updated',
-        date: dateStr,
-        status: status
-      });
-    }} />}
-    </div>;
-};
-// Date editor component
-const DateAvailabilityEditor = ({
-  date,
-  initialStatus = 'unset',
-  onClose,
-  onSave
-}) => {
-  const [status, setStatus] = useState(initialStatus === 'unset' ? 'available' : initialStatus);
-  const [timeSlots, setTimeSlots] = useState([]);
-  return <div className="mt-4 border-t border-gray-200 pt-4">
-      <h3 className="font-medium mb-2">
-        Set Availability for{' '}
-        {date?.toLocaleDateString('en-US', {
-        weekday: 'long',
-        month: 'short',
-        day: 'numeric'
-      })}
-      </h3>
-      <div className="mb-4">
-        <div className="flex space-x-2 mb-3">
-          <button onClick={() => setStatus('available')} className={`px-4 py-2 rounded-lg text-sm font-medium flex-1 ${status === 'available' ? 'bg-green-100 text-green-800 border border-green-200' : 'bg-gray-100 text-gray-600'}`}>
-            Available
+
+      {/* Quick actions for bulk updates */}
+      <div className="mt-6 p-4 bg-cs-bg-card rounded-lg border border-cs-gray-200">
+        <h3 className="text-sm font-medium text-cs-text-primary mb-3">Quick Actions</h3>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => {
+              // Set all weekdays as available
+              const year = currentMonth.getFullYear();
+              const month = currentMonth.getMonth();
+              const daysInMonth = new Date(year, month + 1, 0).getDate();
+              const updates = {};
+              
+              for (let day = 1; day <= daysInMonth; day++) {
+                const date = new Date(year, month, day);
+                const dayOfWeek = date.getDay();
+                if (dayOfWeek >= 1 && dayOfWeek <= 5) { // Monday to Friday
+                  const dateStr = date.toISOString().split('T')[0];
+                  if (!isPastDate(date)) {
+                    updates[dateStr] = 'available';
+                    availabilityService.setDateAvailability(userId, dateStr, 'available');
+                  }
+                }
+              }
+              setAvailabilityData({ ...availabilityData, ...updates });
+            }}
+            className="px-3 py-2 text-xs bg-cs-covered-confirmed text-cs-text-on-dark rounded-lg hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-cs-interactive-primary"
+          >
+            Available Weekdays
           </button>
-          <button onClick={() => setStatus('tentative')} className={`px-4 py-2 rounded-lg text-sm font-medium flex-1 ${status === 'tentative' ? 'bg-yellow-100 text-yellow-800 border border-yellow-200' : 'bg-gray-100 text-gray-600'}`}>
-            Tentative
+          <button
+            onClick={() => {
+              // Set all weekends as available
+              const year = currentMonth.getFullYear();
+              const month = currentMonth.getMonth();
+              const daysInMonth = new Date(year, month + 1, 0).getDate();
+              const updates = {};
+              
+              for (let day = 1; day <= daysInMonth; day++) {
+                const date = new Date(year, month, day);
+                const dayOfWeek = date.getDay();
+                if (dayOfWeek === 0 || dayOfWeek === 6) { // Sunday or Saturday
+                  const dateStr = date.toISOString().split('T')[0];
+                  if (!isPastDate(date)) {
+                    updates[dateStr] = 'available';
+                    availabilityService.setDateAvailability(userId, dateStr, 'available');
+                  }
+                }
+              }
+              setAvailabilityData({ ...availabilityData, ...updates });
+            }}
+            className="px-3 py-2 text-xs bg-cs-covered-confirmed text-cs-text-on-dark rounded-lg hover:opacity-90 focus:outline-none focus:ring-2 focus:ring-cs-interactive-primary"
+          >
+            Available Weekends
           </button>
-          <button onClick={() => setStatus('unavailable')} className={`px-4 py-2 rounded-lg text-sm font-medium flex-1 ${status === 'unavailable' ? 'bg-red-100 text-red-800 border border-red-200' : 'bg-gray-100 text-gray-600'}`}>
-            Unavailable
+          <button
+            onClick={() => {
+              // Clear all availability for the month
+              const year = currentMonth.getFullYear();
+              const month = currentMonth.getMonth();
+              const daysInMonth = new Date(year, month + 1, 0).getDate();
+              const updates = {};
+              
+              for (let day = 1; day <= daysInMonth; day++) {
+                const date = new Date(year, month, day);
+                const dateStr = date.toISOString().split('T')[0];
+                if (!isPastDate(date)) {
+                  updates[dateStr] = 'unset';
+                  // Remove from service
+                  availabilityService.setDateAvailability(userId, dateStr, 'available');
+                }
+              }
+              setAvailabilityData({});
+            }}
+            className="px-3 py-2 text-xs bg-cs-gray-300 text-cs-text-primary rounded-lg hover:bg-cs-gray-400 focus:outline-none focus:ring-2 focus:ring-cs-interactive-primary"
+          >
+            Clear Month
           </button>
         </div>
       </div>
-      <div className="flex justify-end mt-4 space-x-2">
-        <button onClick={onClose} className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg">
-          Cancel
-        </button>
-        <button onClick={() => onSave(status)} className="px-4 py-2 bg-blue-500 text-white rounded-lg">
-          Save
-        </button>
-      </div>
-    </div>;
+    </div>
+  );
 };
