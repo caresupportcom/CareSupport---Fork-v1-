@@ -1,0 +1,58 @@
+/* PLEASE NOTE: THESE TAILWIND IMPORTS SHOULD NEVER BE DELETED */
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+/* DO NOT DELETE THESE TAILWIND IMPORTS, OTHERWISE THE STYLING WILL NOT RENDER AT ALL */
+/* Accessibility styles */
+.high-contrast {
+  --bg-opacity: 1 !important;
+  --text-opacity: 1 !important;
+  /* Increase contrast for text */
+  .text-gray-500, .text-gray-600 {
+    @apply text-gray-800;
+  }
+  /* Increase contrast for borders */
+  .border-gray-200 {
+    @apply border-gray-400;
+  }
+  /* Increase contrast for backgrounds */
+  .bg-gray-50, .bg-gray-100 {
+    @apply bg-white;
+  }
+  /* Increase contrast for active elements */
+  .bg-blue-100 {
+    @apply bg-blue-200;
+  }
+  .text-blue-500, .text-blue-600 {
+    @apply text-blue-700;
+  }
+}
+.large-text {
+  /* Base font size increase */
+  html, body {
+    font-size: 18px;
+  }
+  /* Specific text size increases */
+  .text-xs {
+    font-size: 0.875rem !important;
+  }
+  .text-sm {
+    font-size: 1rem !important;
+  }
+  .text-base {
+    font-size: 1.125rem !important;
+  }
+  .text-lg {
+    font-size: 1.25rem !important;
+  }
+  .text-xl {
+    font-size: 1.5rem !important;
+  }
+  .text-2xl {
+    font-size: 1.75rem !important;
+  }
+}
+.reduce-motion * {
+  transition: none !important;
+  animation: none !important;
+}
